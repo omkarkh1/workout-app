@@ -1,6 +1,6 @@
 # Gym Exercise Tracker
 
-A full-stack web application for tracking gym workouts with user authentication, built with React, Node.js/Express, and MongoDB.
+A full-stack web application for tracking gym workouts with user authentication, built with React, Node.js/Express, and PostgreSQL.
 
 ## Features
 
@@ -9,7 +9,7 @@ A full-stack web application for tracking gym workouts with user authentication,
 - ✍️ Add, edit, and delete workouts
 - 🔍 Filter workouts by date or exercise
 - 📱 Mobile-responsive design
-- ☁️ Cloud-ready for MongoDB Atlas and Render deployment
+- ☁️ Cloud-ready for Render deployment with PostgreSQL
 
 ## Tech Stack
 
@@ -22,7 +22,7 @@ A full-stack web application for tracking gym workouts with user authentication,
 **Backend:**
 - Node.js
 - Express
-- MongoDB with Mongoose
+- PostgreSQL with Sequelize ORM
 - JWT for authentication
 - bcryptjs for password hashing
 
@@ -54,7 +54,7 @@ gym-tracker/
 ### Prerequisites
 
 - Node.js (v14 or higher)
-- MongoDB Atlas account (free tier)
+- PostgreSQL database (local or Render)
 - Git
 
 ### Step 1: Clone and Install Dependencies
@@ -73,13 +73,24 @@ npm run install-client
 npm run install-all
 ```
 
-### Step 2: MongoDB Atlas Setup
+### Step 2: Database Setup
 
-1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-2. Create a new cluster (free tier M0)
-3. Create a database user with password
-4. Whitelist your IP address (or use 0.0.0.0/0 for development)
-5. Get your connection string (looks like: `mongodb+srv://username:password@cluster.mongodb.net/`)
+**Option A: Local PostgreSQL**
+
+1. Install PostgreSQL locally
+2. Create a database:
+
+```sql
+CREATE DATABASE gym_tracker;
+CREATE USER gym_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE gym_tracker TO gym_user;
+```
+
+**Option B: Render PostgreSQL (Recommended for deployment)**
+
+1. Create account at [Render](https://render.com)
+2. Create new PostgreSQL database (free tier available)
+3. Copy the Internal Database URL
 
 ### Step 3: Environment Variables
 
@@ -87,7 +98,7 @@ Create `.env` file in the `/server` directory:
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb+srv://your-username:your-password@cluster.mongodb.net/gym-tracker?retryWrites=true&w=majority
+DATABASE_URL=postgresql://user:password@localhost:5432/gym_tracker
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 NODE_ENV=development
 ```
@@ -98,7 +109,7 @@ Create `.env` file in the `/client` directory:
 REACT_APP_API_URL=http://localhost:5000
 ```
 
-**Important:** Replace the placeholder values with your actual MongoDB credentials and generate a secure JWT secret.
+**Important:** Replace the DATABASE_URL with your actual PostgreSQL credentials and generate a secure JWT secret.
 
 ### Step 4: Run the Application
 
@@ -122,7 +133,7 @@ The app will be available at `http://localhost:3000`
 
 - GitHub account
 - Render account (free tier)
-- MongoDB Atlas database (already set up above)
+- Project code pushed to GitHub
 
 ### Step 1: Push Code to GitHub
 
@@ -135,7 +146,19 @@ git remote add origin https://github.com/yourusername/gym-tracker.git
 git push -u origin main
 ```
 
-### Step 2: Deploy Backend to Render
+### Step 2: Create PostgreSQL Database
+
+1. Go to [Render Dashboard](https://dashboard.render.com/)
+2. Click "New +" → "PostgreSQL"
+3. Configure:
+   - Name: `gym-tracker-db`
+   - Database: `gym_tracker`
+   - Region: Choose closest
+   - Plan: Free
+4. Click "Create Database"
+5. Copy the **Internal Database URL**
+
+### Step 3: Deploy Backend to Render
 
 1. Go to [Render Dashboard](https://dashboard.render.com/)
 2. Click "New +" → "Web Service"
@@ -148,15 +171,14 @@ git push -u origin main
    - **Start Command:** `node server.js`
    - **Plan:** Free
 5. Add Environment Variables:
-   - `MONGODB_URI`: Your MongoDB Atlas connection string
+   - `DATABASE_URL`: Your PostgreSQL Internal Database URL from Step 2
    - `JWT_SECRET`: Your secure JWT secret (generate a strong random string)
    - `NODE_ENV`: `production`
-   - `PORT`: `10000` (Render default, but will be overridden automatically)
 6. Click "Create Web Service"
 7. Wait for deployment (5-10 minutes)
 8. Copy your backend URL (e.g., `https://gym-tracker-backend.onrender.com`)
 
-### Step 3: Deploy Frontend to Render
+### Step 4: Deploy Frontend to Render
 
 1. Click "New +" → "Static Site"
 2. Connect the same GitHub repository
@@ -167,19 +189,18 @@ git push -u origin main
    - **Publish Directory:** `build`
 4. Add Environment Variable:
    - `REACT_APP_API_URL`: Your backend URL from Step 2 (without trailing slash)
-5. Click "Create Static Site"
-6. Wait for deployment (5-10 minutes)
+6. Click "Create Static Site"
+7. Wait for deployment (5-10 minutes)
 
-### Step 4: Update CORS (if needed)
+### Step 5: Verify
 
-If you encounter CORS errors, the backend is already configured to accept requests from any origin in production. However, for better security, you can update the CORS configuration in `server/server.js` to only allow your frontend URL.
+Visit your frontend URL and test the application!
 
 ### Important Notes for Render Free Tier
 
-- **Backend spin-down:** Free tier backends sleep after 15 minutes of inactivity. First request after sleep takes 30-60 seconds.
-- **Monthly hours:** Free tier has 750 hours/month limit (enough for one service running 24/7).
-- **Build time:** Free tier builds can be slow. Be patient during deployment.
-- **Database:** Use MongoDB Atlas free tier (M0) for database storage.
+- **Backend:** Spins down after 15 minutes of inactivity (30-60s wake time)
+- **Database:** Free PostgreSQL expires after 90 days (upgrade to $7/month for permanent storage)
+- **Storage:** 1 GB database storage on free tier
 
 ## API Endpoints
 
@@ -207,10 +228,10 @@ If you encounter CORS errors, the backend is already configured to accept reques
 
 ### Local Development Issues
 
-**MongoDB Connection Error:**
-- Check your MongoDB Atlas connection string
-- Ensure your IP is whitelisted in MongoDB Atlas
-- Verify database user credentials
+**PostgreSQL Connection Error:**
+- Check your DATABASE_URL in server/.env
+- Ensure PostgreSQL is running locally
+- Verify database exists and user has permissions
 
 **Port Already in Use:**
 - Change PORT in server/.env to a different number
@@ -225,13 +246,13 @@ If you encounter CORS errors, the backend is already configured to accept reques
 
 **Build Failed:**
 - Check build logs in Render dashboard
-- Ensure all dependencies are in package.json (not devDependencies for production deps)
+- Ensure all dependencies are in package.json
 - Verify Root Directory is set correctly
 
-**Backend Not Responding:**
-- Check if service is sleeping (free tier)
-- Verify environment variables are set correctly
-- Check server logs in Render dashboard
+**Database Connection Error:**
+- Verify DATABASE_URL is set correctly
+- Use Internal Database URL (not External)
+- Ensure database and backend are in same region
 
 **Frontend Can't Connect to Backend:**
 - Verify `REACT_APP_API_URL` is set to correct backend URL

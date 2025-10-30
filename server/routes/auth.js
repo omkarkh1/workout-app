@@ -27,7 +27,7 @@ router.post(
       const { name, email, password } = req.body;
 
       // Check if user already exists
-      let user = await User.findOne({ email });
+      let user = await User.findOne({ where: { email } });
       if (user) {
         return res.status(400).json({ message: 'User already exists with this email' });
       }
@@ -37,13 +37,11 @@ router.post(
       const hashedPassword = await bcrypt.hash(password, salt);
 
       // Create new user
-      user = new User({
+      user = await User.create({
         name,
         email,
         password: hashedPassword,
       });
-
-      await user.save();
 
       // Create JWT token
       const payload = {
@@ -89,7 +87,7 @@ router.post(
       const { email, password } = req.body;
 
       // Check if user exists
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ where: { email } });
       if (!user) {
         return res.status(400).json({ message: 'Invalid credentials' });
       }
@@ -129,7 +127,9 @@ router.post(
 // @access  Private
 router.get('/user', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select('-password');
+    const user = await User.findByPk(req.userId, {
+      attributes: { exclude: ['password'] }
+    });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js v14 or higher
-- MongoDB Atlas account (free tier)
+- PostgreSQL (local or Render)
 
 ## Setup Steps
 
@@ -17,13 +17,24 @@ npm install
 npm run install-all
 ```
 
-### 2. Configure MongoDB Atlas
+### 2. Configure PostgreSQL
 
-1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-2. Create a free cluster (M0)
-3. Create a database user
-4. Whitelist IP: 0.0.0.0/0 (for development)
-5. Get connection string
+**Local PostgreSQL:**
+
+```bash
+# Create database
+psql postgres
+CREATE DATABASE gym_tracker;
+CREATE USER gym_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE gym_tracker TO gym_user;
+\q
+```
+
+**Or use Render PostgreSQL:**
+
+1. Go to [Render](https://render.com)
+2. Create PostgreSQL database (free tier)
+3. Copy Internal Database URL
 
 ### 3. Set Up Environment Variables
 
@@ -31,7 +42,7 @@ npm run install-all
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/gym-tracker?retryWrites=true&w=majority
+DATABASE_URL=postgresql://gym_user:your_password@localhost:5432/gym_tracker
 JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
 NODE_ENV=development
 ```
@@ -96,10 +107,10 @@ gym-tracker/
 
 ## Troubleshooting
 
-**MongoDB Connection Error:**
-- Verify connection string
-- Check IP whitelist in Atlas
-- Ensure database user has correct permissions
+**PostgreSQL Connection Error:**
+- Verify DATABASE_URL
+- Ensure PostgreSQL is running: `pg_isready`
+- Check database and user exist
 
 **Port Already in Use:**
 ```bash

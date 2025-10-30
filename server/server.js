@@ -1,7 +1,7 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const { sequelize } = require('./config/database');
 
 // Load environment variables
 dotenv.config();
@@ -18,15 +18,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+// Connect to PostgreSQL and sync models
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log('PostgreSQL connected successfully');
+    return sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
   })
-  .then(() => console.log('MongoDB connected successfully'))
+  .then(() => {
+    console.log('Database models synchronized');
+  })
   .catch((err) => {
-    console.error('MongoDB connection error:', err);
+    console.error('Database connection error:', err);
     process.exit(1);
   });
 

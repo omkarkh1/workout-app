@@ -1,34 +1,52 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const UserSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: [true, 'Name is required'],
-      trim: true,
-      minlength: [2, 'Name must be at least 2 characters'],
-      maxlength: [50, 'Name cannot exceed 50 characters'],
-    },
-    email: {
-      type: String,
-      required: [true, 'Email is required'],
-      unique: true,
-      lowercase: true,
-      trim: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        'Please enter a valid email',
-      ],
-    },
-    password: {
-      type: String,
-      required: [true, 'Password is required'],
-      minlength: [6, 'Password must be at least 6 characters'],
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  name: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    validate: {
+      notEmpty: { msg: 'Name is required' },
+      len: {
+        args: [2, 50],
+        msg: 'Name must be between 2 and 50 characters',
+      },
     },
   },
-  {
-    timestamps: true,
-  }
-);
+  email: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    unique: true,
+    validate: {
+      notEmpty: { msg: 'Email is required' },
+      isEmail: { msg: 'Please enter a valid email' },
+    },
+  },
+  password: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      notEmpty: { msg: 'Password is required' },
+      len: {
+        args: [6],
+        msg: 'Password must be at least 6 characters',
+      },
+    },
+  },
+}, {
+  tableName: 'users',
+  timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['email']
+    }
+  ]
+});
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = User;

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
+const { Op } = require('sequelize');
 const Workout = require('../models/Workout');
 const auth = require('../middleware/auth');
 
@@ -12,25 +13,30 @@ router.get('/', auth, async (req, res) => {
     const { exercise, startDate, endDate } = req.query;
     
     // Build query
-    const query = { userId: req.userId };
+    const where = { userId: req.userId };
     
     // Filter by exercise name
     if (exercise) {
-      query.exerciseName = new RegExp(exercise, 'i');
+      where.exerciseName = {
+        [Op.iLike]: `%${exercise}%`
+      };
     }
     
     // Filter by date range
     if (startDate || endDate) {
-      query.date = {};
+      where.date = {};
       if (startDate) {
-        query.date.$gte = new Date(startDate);
+        where.date[Op.gte] = new Date(startDate);
       }
       if (endDate) {
-        query.date.$lte = new Date(endDate);
+        where.date[Op.lte] = new Date(endDate);
       }
     }
 
-    const workouts = await Workout.find(query).sort({ date: -1, createdAt: -1 });
+    const workouts = await Workout.findAll({
+      where,
+      order: [['date', 'DESC'], ['createdAt', 'DESC']]
+    });
     
     res.json(workouts);
   } catch (error) {
@@ -45,8 +51,10 @@ router.get('/', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   try {
     const workout = await Workout.findOne({
-      _id: req.params.id,
-      userId: req.userId,
+      where: {
+        id: req.params.id,
+        userId: req.userId,
+      }
     });
 
     if (!workout) {
@@ -56,9 +64,6 @@ router.get('/:id', auth, async (req, res) => {
     res.json(workout);
   } catch (error) {
     console.error('Get workout error:', error);
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'Workout not found' });
-    }
     res.status(500).json({ message: 'Server error while fetching workout' });
   }
 });
@@ -103,7 +108,7 @@ router.post(
 
       const { exerciseName, sets, reps, weight, date, notes } = req.body;
 
-      const workout = new Workout({
+      const workout = await Workout.create({
         userId: req.userId,
         exerciseName,
         sets,
@@ -112,8 +117,6 @@ router.post(
         date: date || new Date(),
         notes: notes || '',
       });
-
-      await workout.save();
 
       res.status(201).json(workout);
     } catch (error) {
@@ -165,34 +168,24 @@ router.put(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { exerciseName, sets, reps, weight, date, notes } = req.body;
-
       // Find workout
       let workout = await Workout.findOne({
-        _id: req.params.id,
-        userId: req.userId,
+        where: {
+          id: req.params.id,
+          userId: req.userId,
+        }
       });
 
       if (!workout) {
         return res.status(404).json({ message: 'Workout not found' });
       }
 
-      // Update fields
-      if (exerciseName !== undefined) workout.exerciseName = exerciseName;
-      if (sets !== undefined) workout.sets = sets;
-      if (reps !== undefined) workout.reps = reps;
-      if (weight !== undefined) workout.weight = weight;
-      if (date !== undefined) workout.date = date;
-      if (notes !== undefined) workout.notes = notes;
-
-      await workout.save();
+      // Update workout
+      await workout.update(req.body);
 
       res.json(workout);
     } catch (error) {
       console.error('Update workout error:', error);
-      if (error.kind === 'ObjectId') {
-        return res.status(404).json({ message: 'Workout not found' });
-      }
       res.status(500).json({ message: 'Server error while updating workout' });
     }
   }
@@ -203,21 +196,22 @@ router.put(
 // @access  Private
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const workout = await Workout.findOneAndDelete({
-      _id: req.params.id,
-      userId: req.userId,
+    const workout = await Workout.findOne({
+      where: {
+        id: req.params.id,
+        userId: req.userId,
+      }
     });
 
     if (!workout) {
       return res.status(404).json({ message: 'Workout not found' });
     }
 
+    await workout.destroy();
+
     res.json({ message: 'Workout deleted successfully' });
   } catch (error) {
     console.error('Delete workout error:', error);
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'Workout not found' });
-    }
     res.status(500).json({ message: 'Server error while deleting workout' });
   }
 });
